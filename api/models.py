@@ -5,18 +5,18 @@ from django.db import models
 
 class Ingredient(models.Model):
     nut_db_id = models.IntegerField()
-    food_grp_code = models.IntegerField()
-    long_desc = models.CharField(max_length=200)
-    short_desc = models.CharField(max_length=60)
-    common_name = models.CharField(max_length=100)
-    manufac_name = models.CharField(max_length=65)
-    ref_desc = models.CharField(max_length=135)
-    refuse = models.IntegerField()
-    sci_name = models.CharField(max_length=65)
-    n_factor = models.DecimalField(max_digits=4, decimal_places=2)
-    pro_factor = models.DecimalField(max_digits=4, decimal_places=2)
-    fat_factor = models.DecimalField(max_digits=4, decimal_places=2)
-    cho_factor = models.DecimalField(max_digits=4, decimal_places=2)
+    food_grp_code = models.IntegerField(default=0, null=True)
+    long_desc = models.CharField(max_length=200, blank=True, default=None)
+    short_desc = models.CharField(max_length=60, blank=True, default=None)
+    common_name = models.CharField(max_length=100, blank=True, default=None)
+    manufac_name = models.CharField(max_length=65, blank=True, default=None)
+    ref_desc = models.CharField(max_length=135, blank=True, default=None)
+    refuse = models.IntegerField(default=0, null=True)
+    sci_name = models.CharField(max_length=65, blank=True, default=None)
+    n_factor = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, null=True)
+    pro_factor = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, null=True)
+    fat_factor = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, null=True)
+    cho_factor = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, null=True)
 
     def __str__(self):
         return self.short_desc

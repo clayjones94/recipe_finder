@@ -16,6 +16,8 @@ from . serializers import IngredientSerializer
 from . serializers import RecipeSerializer
 from . serializers import RecipeIngredientSerializer
 
+from usdr_reader import USDRParser
+
 class IngredientList(APIView):
 	def get(self, request):
 		igts = Ingredient.objects.all()
@@ -28,6 +30,7 @@ class RecipeList(APIView):
 		serializer = RecipeSerializer(rcps, many=True)
 		return Response(serializer.data)
 
+class Recipe(APIView):
 	def post(self, request):
 		serializer = RecipeSerializer(data=request.data)
 		if serializer.is_valid():
