@@ -32,9 +32,9 @@ class Recipe(models.Model):
 
 class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, related_name='recipe_ingredients', on_delete=models.CASCADE)
     quantity = models.DecimalField(max_digits=4, decimal_places=2)
     unit = models.CharField(max_length=60)
 
     def __str__(self):
-        return self.recipe + "<>" + self.ingredient
+        return self.recipe.name + " <> " + self.ingredient.short_desc

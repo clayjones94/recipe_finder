@@ -14,21 +14,18 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model=RecipeIngredient
-		fields="__all__"
+		fields=('quantity', 'unit', 'ingredient')
 
 class RecipeSerializer(serializers.ModelSerializer):
-	ingredients = RecipeIngredientSerializer(many=True)
+	recipe_ingredients = RecipeIngredientSerializer(many=True)
 
 	class Meta:
 		model = Recipe
-		fields="__all__"
+		fields=('name', 'serving_size', 'cuisine', 'meal_type', 'recipe_ingredients')
 
 	def create(self, validated_data):
-		ingredients_data = validated_data.pop('ingredients')
+		ingredients_data = validated_data.pop('recipe_ingredients')
 		recipe = Recipe.objects.create(**validated_data)
 		for ingredient_data in ingredients_data:
-			ingredient_id = ingredient_data.pop('ingredient_id')
-			ingredient = Ingredient.objects.get(id=ingredient_id)
-			rcp_ing = recipe.recipe_ingredient_set.create(**ingredient_data)
-			ingredient.recipe_ingredient_set.add(rcp_ing)
+			rcp_ing = RecipeIngredient.objects.create(recipe=recipe, **ingredient_data)
 		return recipe
