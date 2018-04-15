@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.db.models import Q
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -15,6 +16,13 @@ from . models import RecipeIngredient
 from . serializers import IngredientSerializer
 from . serializers import RecipeSerializer
 from . serializers import RecipeIngredientSerializer
+
+class SuggestIngredients(APIView):
+	def get(self, request):
+		query = request.GET.get('q')
+		igts = Ingredient.objects.filter(Q(long_desc__icontains=query) | Q(short_desc__icontains=query))[:5]
+		serializer = IngredientSerializer(igts, many=True)
+		return Response(serializer.data)
 
 class IngredientList(APIView):
 	def get(self, request):
