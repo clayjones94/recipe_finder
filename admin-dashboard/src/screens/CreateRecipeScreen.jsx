@@ -3,6 +3,7 @@ import TextField from 'material-ui/TextField';
 import DropDownMenu from 'material-ui/DropDownMenu';
 import MenuItem from 'material-ui/MenuItem';
 import AutoComplete from 'material-ui/AutoComplete';
+import RaisedButton from 'material-ui/RaisedButton';
 import {
   Table,
   TableBody,
@@ -13,6 +14,21 @@ import {
 } from 'material-ui/Table';
 
 import createRecipeActions from '../actions/createRecipeActions.js';
+
+const Units = [
+  "gallon",
+  "quart",
+  "pint",
+  "cup",
+  "fluid_ounce",
+  "tablespoon",
+  "teaspoon",
+
+  "pound",
+  "ounce",
+  "gram",
+  "kilo_gram"
+]
 
 export default class CreateRecipeScreen extends React.Component {
 
@@ -25,10 +41,14 @@ export default class CreateRecipeScreen extends React.Component {
                     'cuisine': "italian",
                     'meal_type': "dinner",
                     'ingredients':{},
-                    'search_text':"",
+                    'ingredient_suggestions':[],
+                    'ing_search_text':"",
+                    'selected_ingredient':{},
+                    'selected_quantity':0,
+                    'unit_search_text':"",
+                    'selected_unit':"",
                   };
 
-    this.ingredientSuggestions = [];
   }
 
   fieldUpdate(event, newValue) {
@@ -47,24 +67,98 @@ export default class CreateRecipeScreen extends React.Component {
     this.setState({'meal_type': value});
   }
 
-  addIngredient(ingredient) {
+  addIngredient() {
     var timestamp = (new Date()).getTime();
-    this.state.ingredients['ingredient-' + timestamp ] = ingredient;
-    this.setState({ ingredients : this.state.ingredients });
+    let ing = {
+                ingredient:this.state.selected_ingredient,
+                unit:this.state.selected_unit,
+                quantity:this.state.quantity
+              }
+    this.state.ingredients['ingredient-' + timestamp ] = ing;
+    this.setState({ 
+                    ingredients : this.state.ingredients,
+                    selected_ingredient: {},
+                    ing_search_text:"",
+                    selected_unit: "",
+                    unit_search_text:"",
+                    selected_quantity:0
+                  });
   }
 
   handleUpdateInput(searchText) {
-    this.setState({
-      searchText: searchText,
-    });
-    createRecipeActions.getIngredientSuggestions(searchText, function(success, suggestions){
+    var self = this;
+
+    createRecipeActions.getIngredientSuggestions(searchText, function(success, suggestions){ 
       console.log(suggestions);
+      if (success) {
+        self.setState({ingredient_suggestions:suggestions.data});
+      }
+    });
+
+    this.setState({
+      ing_search_text: searchText,
     });
   }
 
-  handleNewRequest() {
-    this.setState({
-      searchText: '',
+  selectIngredient(chosenRequest, index) {
+    if (index == -1) {
+      if (this.state.ingredient_suggestions.length > 0) {
+        let ing = this.state.ingredient_suggestions[0];
+        this.setState({ 
+          ing_search_text: ing.long_desc,
+          selected_ingredient: ing
+        });
+      } else {
+        this.setState({ 
+          ing_search_text: ""
+        });
+      }
+    } else {
+      let ing = this.state.ingredient_suggestions[index];
+      this.setState({ 
+        selected_ingredient: ing
+      });
+    }
+  }
+
+  onFieldChange(event, newValue) {
+    this.setState({ quantity:newValue })
+  }
+
+  selectUnit(chosen, index) {
+    this.setState({selected_unit:this.state.unit_search_text})
+  }
+
+  createRecipe() {
+    var ingredients = [];
+    for(var key in this.state.ingredients) { 
+      var ing = this.state.ingredients[key];
+      ing.ingredient = ing.ingredient.id;
+      ingredients.push(ing); 
+    }
+    var data = {
+      name: this.state.recipe_name,
+      serving_size: this.state.serving_size,
+      cuisine: this.state.cuisine,
+      meal_type: this.state.meal_type,
+      recipe_ingredients: ingredients
+    }
+    createRecipeActions.createRecipe(data, function(success, suggestions){ 
+      if (success) {
+         this.setState({
+                    'recipe_name': "",
+                    'serving_size': 4,
+                    'cuisine': "italian",
+                    'meal_type': "dinner",
+                    'ingredients':{},
+                    'ingredient_suggestions':[],
+                    'ing_search_text':"",
+                    'selected_ingredient':{},
+                    'selected_quantity':0,
+                    'unit_search_text':"",
+                    'selected_unit':"",
+                  });
+      }
     });
   }
 
@@ -113,11 +207,12 @@ export default class CreateRecipeScreen extends React.Component {
           <Table
             selectable={false}
           >
-            <TableHeader>
+            <TableHeader adjustForCheckbox={false} displaySelectAll={false}>
               <TableRow>
                 <TableHeaderColumn>Ingredient</TableHeaderColumn>
                 <TableHeaderColumn>Quantity</TableHeaderColumn>
                 <TableHeaderColumn>Unit</TableHeaderColumn>
+                <TableHeaderColumn></TableHeaderColumn>
               </TableRow>
             </TableHeader>
             <TableBody
@@ -126,7 +221,7 @@ export default class CreateRecipeScreen extends React.Component {
               {
                 Object.keys(this.state.ingredients).map(function(key) {
                   return  <TableRow>
-                            <TableRowColumn>{this.state.ingredients[key].ingredient.name}</TableRowColumn>
+                            <TableRowColumn>{this.state.ingredients[key].ingredient.long_desc}</TableRowColumn>
                             <TableRowColumn>{this.state.ingredients[key].quantity}</TableRowColumn>
                             <TableRowColumn>{this.state.ingredients[key].unit}</TableRowColumn>
                           </TableRow>
@@ -136,19 +231,38 @@ export default class CreateRecipeScreen extends React.Component {
                 <TableRowColumn>
                   <AutoComplete
                     hintText="Search Ingredient"
-                    searchText={this.state.search_text}
+                    searchText={this.state.ing_search_text}
+                    filter={AutoComplete.noFilter}
                     onUpdateInput={this.handleUpdateInput.bind(this)}
-                    onNewRequest={this.handleNewRequest.bind(this)}
-                    dataSource={this.ingredientSuggestions}
-                    filter={(searchText, key) => (key.indexOf(searchText) !== -1)}
+                    onNewRequest={this.selectIngredient.bind(this)}
+                    dataSource={this.state.ingredient_suggestions.map(value => value.long_desc)}
                     openOnFocus={true}
                   />
                 </TableRowColumn>
-                <TableRowColumn></TableRowColumn>
-                <TableRowColumn></TableRowColumn>
+                <TableRowColumn>
+                  <TextField
+                    hintText="Quantity"
+                    onChange={this.onFieldChange.bind(this)}
+                  />
+                </TableRowColumn>
+                <TableRowColumn>
+                  <AutoComplete
+                    hintText="Unit"
+                    searchText={this.state.unit_search_text}
+                    filter={AutoComplete.caseInsensitiveFilter}
+                    onUpdateInput={(searchText)=>{this.setState({unit_search_text:searchText})}}
+                    onNewRequest={this.selectUnit.bind(this)}
+                    dataSource={Units}
+                    openOnFocus={true}
+                  />
+                </TableRowColumn>
+                <TableRowColumn>
+                  <RaisedButton label="Add Ingredient" primary={true} onClick={this.addIngredient.bind(this)} />
+                </TableRowColumn>
               </TableRow>
             </TableBody>
           </Table>
+          <RaisedButton label="Create Recipe" primary={true} onClick={this.createRecipe.bind(this)} />
       </div>
     );
   }
